@@ -9,7 +9,8 @@ require('dotenv').config();
 const app = express();
 const movieData = require('./movie-data');
 
-app.use(morgan('dev'));
+const morganSetting = process.env.NODE_ENV === 'production' ? 'tiny' : 'dev';
+app.use(morgan(morganSetting));
 app.use(helmet());
 app.use(cors());
 app.use(function validateBearer(req, res, next) {
@@ -52,6 +53,29 @@ app.get('/*', (req, res) => {
   res.status(404).json({ error: 'Page does not exist' });
 });
 
-app.listen(8000, () => {
-  console.log('Express server is listening on port 8000');
+app.use((req, res, next) => {
+  let response;
+  if (process.env.NODE_ENV === 'production') {
+    response = { message: 'server error' };
+  } else {
+    response = { message: 'error encountered on method ' + req.method + ' on path ' + req.path };
+  }
+  res.status(500).json(response);
+});
+
+app.use((error, req, res, next) => {
+  let response;
+  if (process.env.NODE_ENV === 'production') {
+    response = { error, message: 'server error' };
+  } else {
+    response = { error, message: 'error encountered on method ' + req.method + ' on path ' + req.path };
+  }
+  res.status(500).json(response);
+});
+
+
+const PORT = process.env.PORT || 8000;
+
+app.listen(PORT, () => {
+  // console.log(`Server listening at http://localhost:${PORT}`);
 });
